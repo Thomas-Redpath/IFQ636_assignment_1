@@ -1,0 +1,18 @@
+# Dependencies - ignore at all levels
+node_modules/
+**/node_modules/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Build files
+build/
+dist/
+
+# Logs
+*.log
+
+# SSH keys
+*.pem
