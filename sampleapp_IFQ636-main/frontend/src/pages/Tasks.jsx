@@ -1,39 +1,55 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import axiosInstance from '../axiosConfig';
-import TaskForm from '../components/TaskForm';
 import TaskList from '../components/TaskList';
 import { useAuth } from '../context/AuthContext';
 
-const Tasks = () => {
-  const { user } = useAuth();
+const Inventory = ({ token }) => {
   const [tasks, setTasks] = useState([]);
-  const [editingTask, setEditingTask] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchTasks = async () => {
+    let active = true;
+
+    const fetchProducts = async () => {
       try {
-        const response = await axiosInstance.get('/api/tasks', {
-          headers: { Authorization: `Bearer ${user.token}` },
+        const { data } = await axiosInstance.get('/api/tasks', {
+          headers: { Authorization: `Bearer ${token}` },
         });
-        setTasks(response.data);
-      } catch (error) {
-        alert('Failed to fetch tasks.');
+
+        if (active) setTasks(data);
+      } catch {
+        if (active) setError('Failed to load products. Try refreshing the page.');
+      } finally {
+        if (active) setLoading(false);
       }
     };
 
-    fetchTasks();
-  }, [user]);
+    fetchProducts();
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  if (loading) return <p role="status">Loading products…</p>;
+  if (error) return <p role="alert">{error}</p>;
+
+  return <TaskList tasks={tasks} setTasks={setTasks} token={token} />;
+};
+
+const Tasks = () => {
+  const { user } = useAuth();
+  const token = user?.token;
 
   return (
-    <div className="container mx-auto p-6">
-      <TaskForm
-        tasks={tasks}
-        setTasks={setTasks}
-        editingTask={editingTask}
-        setEditingTask={setEditingTask}
-      />
-      <TaskList tasks={tasks} setTasks={setTasks} setEditingTask={setEditingTask} />
-    </div>
+    <main className="container mx-auto p-6">
+      {token ? (
+        <Inventory key={token} token={token} />
+      ) : (
+        <p>Sign in to manage products.</p>
+      )}
+    </main>
   );
 };
 
